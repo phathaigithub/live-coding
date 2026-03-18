@@ -61,40 +61,44 @@ Trạng thái được cập nhật trực tiếp vào PostgreSQL giúp đảm b
     *   Cần hệ thống giám sát (Monitoring) độ dài hàng đợi.
 
 ---
-## 5. Hướng dẫn cài đặt & Chạy dự án
+## 5. Hướng dẫn khởi chạy nhanh với Docker
+
+Dành cho nhà tuyển dụng hoặc người dùng muốn trải nghiệm nhanh dự án mà không cần cài đặt Java/Maven.
 
 ### Yêu cầu hệ thống (Prerequisites)
-*   **Java**: JDK 17 trở lên.
-*   **Docker Desktop**: Đã cài đặt và đang chạy trên máy (Linux, macOS, hoặc Windows).
-*   **Maven**: Đi kèm trong dự án (`mvnw`).
+*   **Docker Desktop**: Đã cài đặt và đang chạy.
 
-### Các bước khởi chạy dự án
+### Các bước khởi chạy
 
-#### Bước 1: Khởi động hạ tầng cơ sở dữ liệu
-Dự án sử dụng PostgreSQL làm DB chính và Redis để quản lý hàng đợi task. Chạy lệnh sau tại thư mục gốc của dự án:
-```powershell
-docker-compose up -d
+#### Bước 1: Clone dự án
+```bash
+git clone <repository_url>
+cd live-coding-platform/backend
 ```
 
-#### Bước 2: Tải các Docker Images cần thiết
-Hệ thống cần các image này để khởi tạo môi trường chạy code cô lập:
-```powershell
-# Chạy mã nguồn Python
+#### Bước 2: Tải các Docker Images cần thiết 
+Dự án cần các image này để tạo môi trường chạy code cô lập cho Python và Node.js:
+```bash
 docker pull python:3.10-slim
-
-# Chạy mã nguồn JavaScript
 docker pull node:18-slim
 ```
 
-#### Bước 3: Cấu hình Docker (Dành cho Windows)
-Nếu chạy trên Windows, hãy đảm bảo Docker Desktop đang chạy. Dự án đã được cấu hình mặc định để kết nối qua Named Pipe: `npipe:////./pipe/docker_engine`.
+#### Bước 3: Khởi chạy toàn bộ hệ thống
+Sử dụng Docker Compose để khởi chạy Backend, PostgreSQL và Redis chỉ với một lệnh duy nhất:
 
-#### Bước 4: Chạy ứng dụng Spring Boot
-Sử dụng Maven wrapper để khởi động server:
-```powershell
-./mvnw spring-boot:run
+**Trên Linux/macOS:**
+```bash
+docker-compose up --build -d
 ```
-Ứng dụng sẽ mặc định lắng nghe tại cổng **8080**.
+
+**Trên Windows (PowerShell):**
+Nếu bạn gặp lỗi về volume mount `/var/run/docker.sock`, hãy chỉnh sửa file `docker-compose.yml` phần volume của service `backend` thành `//./pipe/docker_engine://./pipe/docker_engine` trước khi chạy:
+```powershell
+docker-compose up --build -d
+```
+
+#### Bước 4: Truy cập ứng dụng
+Ứng dụng Backend sẽ sẵn sàng tại: `http://localhost:8080`
 
 ##  API Documentation
 
