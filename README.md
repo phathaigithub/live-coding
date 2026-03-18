@@ -106,3 +106,56 @@ docker-compose up --build -d
 | **POST** | `/code-sessions/{id}/run`| Thực thi code (Async) | N/A | `{"execution_id": "uuid", "status": "QUEUED"}` |
 | **GET** | `/executions/{id}` | Lấy kết quả thực thi | N/A | `{"status": "COMPLETED", "stdout": "1\n", ...}` |
 
+## 7. Kịch bản kiểm thử & Kết quả mong đợi (Test Scenarios)
+
+Dưới đây là các trường hợp kiểm thử phổ biến để xác minh hệ thống:
+
+### Trường hợp 1: Chạy code Python thành công
+*   **Input:** `{"language": "python", "sourceCode": "print(1 + 1)"}`
+*   **Response (Polling):**
+    ```json
+    {
+      "executionId": "uuid",
+      "status": "COMPLETED",
+      "stdout": "2\n",
+      "stderr": "",
+      "executionTimeMs": 150
+    }
+    ```
+
+### Trường hợp 2: Lỗi cú pháp (Syntax Error)
+*   **Input:** `{"language": "javascript", "sourceCode": "console.log(undefined_variable);"}`
+*   **Response (Polling):**
+    ```json
+    {
+      "executionId": "uuid",
+      "status": "FAILED",
+      "stdout": "",
+      "stderr": "ReferenceError: undefined_variable is not defined...",
+      "executionTimeMs": 120
+    }
+    ```
+
+### Trường hợp 3: Vòng lặp vô hạn (Timeout)
+*   **Input:** `{"language": "python", "sourceCode": "while True: pass"}`
+*   **Response (Polling):**
+    ```json
+    {
+      "executionId": "uuid",
+      "status": "TIMEOUT",
+      "stdout": "",
+      "stderr": "Execution exceeded time limit (10s)",
+      "executionTimeMs": 10000
+    }
+    ```
+
+### Trường hợp 4: Ngăn chặn truy cập Internet (Security)
+*   **Input:** `{"language": "python", "sourceCode": "import socket; socket.create_connection(('google.com', 80))"}`
+*   **Response (Polling):**
+    ```json
+    {
+      "status": "COMPLETED/FAILED",
+      "stderr": "socket.gaierror: [Errno -3] Temporary failure in name resolution"
+    }
+    ```
+

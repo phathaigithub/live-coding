@@ -27,11 +27,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgrespwd
       - SPRING_DATA_REDIS_HOST=redis
+      - DOCKER_HOST=tcp://host.docker.internal:2375
     depends_on:
       - postgres
       - redis
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket for DooD
+    # No volume mount needed for TCP connection
 
 volumes:
   postgres_data:

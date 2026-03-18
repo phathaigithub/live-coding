@@ -77,8 +77,9 @@ public class ExecutionWorker {
             // 4. Start and Wait with Timeout
             dockerClient.startContainerCmd(containerId).exec();
             
+            WaitContainerResultCallback waitCallback = new WaitContainerResultCallback();
             boolean finished = dockerClient.waitContainerCmd(containerId)
-                    .exec(new WaitContainerResultCallback())
+                    .exec(waitCallback)
                     .awaitCompletion(10, TimeUnit.SECONDS);
 
             long executionTime = System.currentTimeMillis() - startTime;
@@ -88,6 +89,12 @@ public class ExecutionWorker {
                 updateStatus(task.getExecutionId(), Execution.ExecutionStatus.TIMEOUT, null, "Execution timeout after 10s", executionTime);
                 return;
             }
+
+            // Check exit code to determine SUCCESS or FAILED
+            Integer exitCode = waitCallback.awaitStatusCode();
+            Execution.ExecutionStatus statusFromExitCode = (exitCode != null && exitCode == 0) 
+                ? Execution.ExecutionStatus.COMPLETED 
+                : Execution.ExecutionStatus.FAILED;
 
             // 5. Collect Logs (stdout/stderr)
             StringBuilder stdout = new StringBuilder();
@@ -109,7 +116,11 @@ public class ExecutionWorker {
                     }).awaitCompletion(5, TimeUnit.SECONDS);
 
             // 6. Final Update
-            updateStatus(task.getExecutionId(), Execution.ExecutionStatus.COMPLETED, 
+            Execution.ExecutionStatus finalStatus = (stderr.length() > 0 || statusFromExitCode == Execution.ExecutionStatus.FAILED) 
+                ? Execution.ExecutionStatus.FAILED 
+                : Execution.ExecutionStatus.COMPLETED;
+                
+            updateStatus(task.getExecutionId(), finalStatus, 
                          stdout.toString(), stderr.toString(), executionTime);
 
         } catch (Exception e) {
