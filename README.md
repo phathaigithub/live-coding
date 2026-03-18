@@ -1,6 +1,6 @@
 # Live Coding Platform - Backend Documentation
 
-Hệ thống cung cấp nền tảng thực thi mã nguồn trực tuyến (Live Code Execution) hỗ trợ đa ngôn ngữ (Python, JavaScript) với kiến trúc hướng sự kiện (Event-driven) và xử lý không đồng bộ.
+Hệ thống cung cấp nền tảng thực thi mã nguồn trực tuyến (Live Code Execution) hỗ trợ đa ngôn ngữ (Python, JavaScript) với kiến trúc hướng sự kiện (Event-driven) và xử lý bất đồng bộ.
 
 ## 1. Architecture Overview
 
@@ -10,7 +10,7 @@ Hệ thống xử lý yêu cầu của người dùng qua các giai đoạn:
 1.  **Code Session Creation**: Người dùng khởi tạo phiên làm việc qua `POST /code-sessions`. Hệ thống tạo bản ghi trong PostgreSQL để quản lý ngữ cảnh (ngôn ngữ, mã nguồn).
 2.  **Autosave Behavior**: Trong khi soạn thảo, client gửi `PATCH /code-sessions/{id}` định kỳ. Hệ thống cập nhật mã nguồn vào Database để đảm bảo dữ liệu không bị mất nếu có sự cố.
 3.  **Execution Request**: Khi nhấn "Run", client gọi `POST /code-sessions/{id}/run`. Hệ thống tạo một bản ghi `Execution` với trạng thái `QUEUED` và đẩy metadata vào **Redis List Queue**. Phản hồi được trả về ngay lập tức cho client.
-4.  **Background Execution**: `ExecutionWorker` liên tục "pop" các task từ Redis. Worker thực thi mã trong các **Docker Containers** bị cô lập (Sandboxed) để đảm bảo an toàn.
+4.  **Background Execution**: `ExecutionWorker` liên tục "pop" các task từ Redis. Worker thực thi mã trong các **Docker Containers** bị cô lập để đảm bảo an toàn.
 5.  **Result Polling**: Client sử dụng `execution_id` để gọi `GET /executions/{id}` định kỳ (polling) nhằm kiểm tra trạng thái và nhận kết quả cuối cùng (stdout/stderr).
 
 ##  Architecture Decisions
@@ -19,7 +19,7 @@ Hệ thống xử lý yêu cầu của người dùng qua các giai đoạn:
     *   **Isolation**: Cô lập hoàn toàn mã độc khỏi server chính.
     *   **Resource Control**: Giới hạn chính xác CPU (0.5 Core) và RAM (128MB) cho mỗi task.
     *   **Security**: Chặn hoàn toàn kết nối Internet của container (`networkMode: none`).
-*   **Redis as Message Broker**: Sử dụng Redis List nhờ tốc độ truy xuất cực nhanh và cơ chế `Pop` task an toàn cho mô hình nhiều Worker chạy song song.
+*   **Redis as Message Broker**: Sử dụng Redis List nhờ tốc độ truy xuất nhanh và cơ chế Pop task an toàn cho mô hình nhiều Worker chạy song song.
 
 ### Execution Lifecycle and State Management
 Mỗi yêu cầu thực thi đều trải qua vòng đời nghiêm ngặt:
@@ -53,8 +53,8 @@ Trạng thái được cập nhật trực tiếp vào PostgreSQL giúp đảm b
 
 ## 4. Trade-offs
 
-*   **Technology Choices**: Chọn Docker thay vì VM để có tốc độ khởi động nhanh (ms) và mật độ container cao trên một host.
-*   **Optimization**: Hệ thống được tối ưu cho **Simplicity (Sự đơn giản)** và **Reliability (Tính tin cậy)** trong việc cô lập mã nguồn.
+*   **Technology Choices**: Chọn Docker để có tốc độ khởi động nhanh (ms) và mật độ container cao trên một host.
+*   **Optimization**: Hệ thống được tối ưu cho **Simplicity** và **Reliability** trong việc cô lập mã nguồn.
 *   **Production Readiness Gaps**:
     *   Cần pooling Docker images để tránh độ trễ pull image.
     *   Cần Rate-limiting để ngăn một user spam quá nhiều request "Run".
@@ -63,8 +63,6 @@ Trạng thái được cập nhật trực tiếp vào PostgreSQL giúp đảm b
 ---
 ## 5. Hướng dẫn khởi chạy nhanh với Docker
 
-Dành cho nhà tuyển dụng hoặc người dùng muốn trải nghiệm nhanh dự án mà không cần cài đặt Java/Maven.
-
 ### Yêu cầu hệ thống (Prerequisites)
 *   **Docker Desktop**: Đã cài đặt và đang chạy.
 
@@ -72,8 +70,7 @@ Dành cho nhà tuyển dụng hoặc người dùng muốn trải nghiệm nhanh
 
 #### Bước 1: Clone dự án
 ```bash
-git clone <repository_url>
-cd live-coding-platform/backend
+git clone https://github.com/phathaigithub/live-coding.git
 ```
 
 #### Bước 2: Tải các Docker Images cần thiết 
@@ -84,7 +81,7 @@ docker pull node:18-slim
 ```
 
 #### Bước 3: Khởi chạy toàn bộ hệ thống
-Sử dụng Docker Compose để khởi chạy Backend, PostgreSQL và Redis chỉ với một lệnh duy nhất:
+Sử dụng Docker Compose để khởi chạy Backend, PostgreSQL và Redis:
 
 **Trên Linux/macOS:**
 ```bash
